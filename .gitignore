@@ -1,0 +1,21 @@
+# 143 MB source video — only used to make orphan-loop.mp3. Exceeds GitHub's 100 MB limit; not needed on the site.
+Tokyo Ghoul Root A OST~ Disk2 #15 Orphan.mp4
+
+# Abandoned 3D-model experiment — not used by the website
+_inspect_psk.py
+psk2glb.py
+_modeltest.html
+assets/
+
+# Claude Code local project files
+.claude/
+
+# Local-only files — not part of the live website, kept on my machine only
+Start Website.bat
+cyberpunk.html
+city.html
+sparkle-hsr-sparxie.gif
+
+# Secrets — never commit (temporary GitHub token handoff)
+gh-token.txt
+*.token
