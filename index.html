@@ -540,32 +540,85 @@
   .music-hud:not(.playing) .eq span { height: 2px !important; opacity: 0.4; }
 
   /* =================================================================
-     INTRO — boot sweep + staggered reveal (pure CSS, runs on load so
-     it never waits on the 3D CDN; JS later clears the held animations
-     so parallax/blip regain control of the elements)
+     ENTRY GATE — a loading screen that preloads the heavy assets, then
+     a single ENTER tears away to reveal the site and start the music
+     (that click is also the gesture browsers require to allow audio).
      ================================================================= */
-  .boot {
-    position: fixed; inset: 0; z-index: 96; pointer-events: none;
-    background: #06030a;
-    animation: bootClear 0.85s ease 0.15s forwards;
+  body:not(.entered) { overflow: hidden; }
+
+  .gate {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 24px;
+    background: radial-gradient(ellipse 80% 70% at 50% 42%, #0e0618, #06030a 72%);
+    cursor: progress; overflow: hidden;
   }
-  .boot-bar {
-    position: absolute; left: 0; right: 0; top: 0; height: 3px;
-    background: linear-gradient(90deg, transparent, var(--blood) 25%, #fff, var(--blood) 75%, transparent);
-    box-shadow: 0 0 26px 5px rgba(227, 0, 43, 0.7);
-    opacity: 0;
-    animation: bootSweep 0.6s ease-out 0.12s forwards;
+  .gate.ready { cursor: pointer; }
+  .gate-eye {
+    position: absolute; width: 62vw; height: 62vw; max-width: 760px; max-height: 760px;
+    border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(227,0,43,0.18), rgba(163,90,224,0.10) 42%, transparent 66%);
+    filter: blur(8px);
+    animation: gate-breathe 3.4s ease-in-out infinite;
   }
-  @keyframes bootSweep {
-    0% { top: 0; opacity: 0; }
-    12% { opacity: 1; }
-    88% { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
+  @keyframes gate-breathe { 0%,100% { opacity: 0.55; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.05); } }
+  .gate-name {
+    position: relative; z-index: 2;
+    font-family: var(--serif); font-weight: 700; font-style: italic;
+    font-size: clamp(38px, 6.5vw, 92px); line-height: 1; letter-spacing: 0.02em;
+    color: var(--ink);
+    text-shadow: 0 0 30px rgba(227,0,43,0.4), 0 0 70px rgba(163,90,224,0.3);
   }
-  @keyframes bootClear {
-    0%, 45% { opacity: 1; }
-    100% { opacity: 0; visibility: hidden; }
+  .gate-name::before, .gate-name::after { content: attr(data-text); position: absolute; inset: 0; pointer-events: none; }
+  .gate-name::before { color: var(--blood); z-index: -1; opacity: 0.5; transform: translate(2px, 1px); }
+  .gate-name::after  { color: var(--plum);  z-index: -2; opacity: 0.45; transform: translate(-2px, -1px); }
+  .gate-bar {
+    position: relative; z-index: 2; width: min(300px, 62vw); height: 2px;
+    background: rgba(163,90,224,0.18); overflow: hidden; transition: opacity 0.4s;
   }
+  .gate-bar i {
+    position: absolute; top: 0; left: -42%; height: 100%; width: 42%;
+    background: linear-gradient(90deg, transparent, var(--blood), #fff, var(--blood), transparent);
+    box-shadow: 0 0 14px 2px rgba(227,0,43,0.6);
+    animation: gate-load 1.15s ease-in-out infinite;
+  }
+  @keyframes gate-load { 0% { left: -42%; } 100% { left: 100%; } }
+  .gate.ready .gate-bar { opacity: 0; }
+  .gate-status {
+    position: relative; z-index: 2; padding-left: 0.42em;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--soft); transition: color 0.4s;
+  }
+  .gate.ready .gate-status {
+    color: var(--ink); text-shadow: 0 0 16px rgba(227,0,43,0.55);
+    animation: gate-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes gate-pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+  .gate-scan {
+    position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px);
+  }
+  .gate.leaving { animation: gate-out 0.7s ease forwards; pointer-events: none; }
+  @keyframes gate-out {
+    0%   { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(0); }
+    18%  { clip-path: inset(0 0 64% 0); transform: translateX(-9px); }
+    34%  { clip-path: inset(48% 0 10% 0); transform: translateX(11px); }
+    52%  { clip-path: inset(10% 0 42% 0); transform: translateX(-5px); }
+    70%  { opacity: 0.65; clip-path: inset(0 0 0 0); transform: none; }
+    100% { opacity: 0; transform: scale(1.04); }
+  }
+
+  /* =================================================================
+     INTRO REVEAL — staggered cascade, gated so it plays on ENTER
+     (elements stay hidden behind the gate until then; the cascade then
+     hands off to cursor-parallax + the glitch cycle).
+     ================================================================= */
+  body:not(.entered) .mega,
+  body:not(.entered) .portrait-stack,
+  body:not(.entered) .headline,
+  body:not(.entered) .bio,
+  body:not(.entered) .shards .shard,
+  body:not(.entered) .music-hud { opacity: 0; }
 
   @keyframes introFade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes introMega { from { opacity: 0; transform: translateX(-34px); } to { opacity: 0.16; transform: none; } }
@@ -575,16 +628,16 @@
   }
   @keyframes introSlab { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: none; } }
 
-  .mega { animation: introMega 1.2s ease 0.2s both; }
-  .portrait-stack { animation: introPortrait 0.9s cubic-bezier(0.2, 0.85, 0.25, 1) 0.4s both; }
-  .headline { animation: introSlab 0.8s cubic-bezier(0.2, 0.85, 0.25, 1) 0.62s both; }
-  .bio { animation: introFade 0.8s ease 0.85s both; }
-  .shards .shard { animation: introFade 0.7s ease both; }
-  .shards .shard:nth-child(1) { animation-delay: 1.0s; }
-  .shards .shard:nth-child(2) { animation-delay: 1.1s; }
-  .shards .shard:nth-child(3) { animation-delay: 1.2s; }
-  .shards .shard:nth-child(4) { animation-delay: 1.3s; }
-  .music-hud { animation: introFade 0.9s ease 1.4s both; }
+  body.entered .mega { animation: introMega 1.2s ease 0.15s both; }
+  body.entered .portrait-stack { animation: introPortrait 0.9s cubic-bezier(0.2, 0.85, 0.25, 1) 0.32s both; }
+  body.entered .headline { animation: introSlab 0.8s cubic-bezier(0.2, 0.85, 0.25, 1) 0.5s both; }
+  body.entered .bio { animation: introFade 0.8s ease 0.72s both; }
+  body.entered .shards .shard { animation: introFade 0.7s ease both; }
+  body.entered .shards .shard:nth-child(1) { animation-delay: 0.85s; }
+  body.entered .shards .shard:nth-child(2) { animation-delay: 0.95s; }
+  body.entered .shards .shard:nth-child(3) { animation-delay: 1.05s; }
+  body.entered .shards .shard:nth-child(4) { animation-delay: 1.15s; }
+  body.entered .music-hud { animation: introFade 0.9s ease 1.2s both; }
 
   /* =================================================================
      RESPONSIVE HERO
@@ -718,8 +771,14 @@
 </div>
 <audio id="bgm" src="orphan-loop.mp3" loop preload="auto"></audio>
 
-<!-- intro boot sweep -->
-<div class="boot" id="boot" aria-hidden="true"><span class="boot-bar"></span></div>
+<!-- entry gate: preloads the heavy assets, then ENTER reveals the site + starts the music -->
+<div class="gate" id="gate" role="button" tabindex="0" aria-label="Enter site">
+  <div class="gate-eye" aria-hidden="true"></div>
+  <div class="gate-name" data-text="PetracoreProxy">PetracoreProxy</div>
+  <div class="gate-bar" aria-hidden="true"><i></i></div>
+  <div class="gate-status" id="gateStatus">loading</div>
+  <div class="gate-scan" aria-hidden="true"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script>
@@ -895,18 +954,12 @@
   if (!reduceMotion) drawPetals();
 
   /* ---------- intro hand-off ----------
-     The reveal is pure CSS (so it never waits on the 3D CDN). Once it
-     has finished we strip the held animations off the elements so the
-     cursor-parallax and blip cycle can take control of them again. */
-  if (!reduceMotion) {
-    setTimeout(function () {
-      var els = document.querySelectorAll(".mega, .portrait-stack, .headline, .bio, .shards .shard, .music-hud");
-      for (var i = 0; i < els.length; i++) els[i].style.animation = "none";
-      var bootEl = document.getElementById("boot");
-      if (bootEl && bootEl.parentNode) bootEl.parentNode.removeChild(bootEl);
-    }, 2600);
-    setTimeout(function () { scramble(); }, 1500);
-    setTimeout(function () { scramble(); }, 1760);
+     The staggered reveal fires on ENTER (see the entry gate below). Once
+     it has finished we strip the held animations off the elements so the
+     cursor-parallax and glitch cycle can take control of them again. */
+  function clearIntro() {
+    var els = document.querySelectorAll(".mega, .portrait-stack, .headline, .bio, .shards .shard, .music-hud");
+    for (var i = 0; i < els.length; i++) els[i].style.animation = "none";
   }
 
   /* the name corrupts when the signal tears */
@@ -1080,18 +1133,8 @@
     if (sfxGain) sfxGain.gain.value = 0; /* the corner button mutes all sound */
   }
 
-  /* go straight in: attempt autoplay now, and unlock on the first gesture
-     (browsers require a user gesture before audio may play / a context may run) */
-  startMusic();
-  var unlockEvents = ["pointerdown", "keydown", "touchstart"];
-  function firstGesture(e) {
-    ensureCtx();
-    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
-    var onBtn = e && e.target && e.target.closest && e.target.closest("#musicBtn");
-    if (!onBtn && bgm.paused && !hud.dataset.userPaused) startMusic();
-    unlockEvents.forEach(function (ev) { window.removeEventListener(ev, firstGesture); });
-  }
-  unlockEvents.forEach(function (ev) { window.addEventListener(ev, firstGesture, { passive: true }); });
+  /* The music starts on ENTER (the entry gate, below) — that click is the
+     user gesture browsers require before audio may play. */
 
   musicBtn.addEventListener("click", function () {
     ensureCtx();
@@ -1123,6 +1166,82 @@
     a.addEventListener("pointerenter", sfxHover);
     a.addEventListener("click", function () { sfxClick(); stopMusicForLink(); });
   });
+
+  /* ---------- entry gate: preload, then ENTER reveals the site + plays music ---------- */
+  (function entryGate() {
+    var gate = document.getElementById("gate");
+    if (!gate) return;
+    var statusEl = document.getElementById("gateStatus");
+    var nameEl = gate.querySelector(".gate-name");
+    var ready = false, entered = false, glitchTimer = null;
+    var started = Date.now();
+    var MIN_MS = reduceMotion ? 0 : 1100;   /* minimum loader time so it never just flashes */
+
+    /* preload the heaviest gifs + wait for the music to buffer */
+    var assets = [
+      "gifs%20for%20website/tokyo-ghoul-anime.gif",
+      "gifs%20for%20website/tokyo-ghoul%20(2).gif",
+      "gifs%20for%20website/rize.gif",
+      "gifs%20for%20website/liz.gif"
+    ];
+    var pending = assets.length + 1;         /* +1 = the audio */
+    function step() { if (--pending <= 0) becomeReady(); }
+    assets.forEach(function (src) { var im = new Image(); im.onload = im.onerror = step; im.src = src; });
+    if (bgm.readyState >= 3) { step(); }
+    else {
+      var onCan = function () { bgm.removeEventListener("canplaythrough", onCan); step(); };
+      bgm.addEventListener("canplaythrough", onCan);
+      try { bgm.load(); } catch (e) {}
+    }
+    var hardTimer = setTimeout(becomeReady, 6000);   /* never hang on a slow asset */
+
+    function becomeReady() {
+      if (ready) return;
+      var wait = Math.max(0, MIN_MS - (Date.now() - started));
+      setTimeout(function () {
+        if (ready) return;
+        ready = true;
+        clearTimeout(hardTimer);
+        gate.classList.add("ready");
+        statusEl.textContent = "enter";
+        if (!reduceMotion) glitchTimer = setInterval(glitchName, 2300);
+      }, wait);
+    }
+
+    var GN = "PetracoreProxy", GG = "▓▒░#%&×*+=_";
+    function glitchName() {
+      if (entered || !nameEl) return;
+      var c = GN.split(""), n = 1 + (Math.random() * 3 | 0), k;
+      for (k = 0; k < n; k++) c[Math.random() * c.length | 0] = GG.charAt(Math.random() * GG.length | 0);
+      nameEl.textContent = c.join("");
+      setTimeout(function () { if (nameEl && !entered) nameEl.textContent = GN; }, 110 + Math.random() * 130);
+    }
+
+    function enter() {
+      if (entered || !ready) return;
+      entered = true;
+      if (glitchTimer) clearInterval(glitchTimer);
+      if (nameEl) nameEl.textContent = GN;
+      body.classList.add("entered");      /* fire the staggered reveal */
+      startMusic();                        /* this click is the gesture that unlocks audio */
+      if (reduceMotion) {
+        if (gate.parentNode) gate.parentNode.removeChild(gate);
+        clearIntro();
+        return;
+      }
+      gate.classList.add("leaving");
+      tear(360);                           /* sympathetic page glitch as it tears away */
+      setTimeout(function () { if (gate.parentNode) gate.parentNode.removeChild(gate); }, 720);
+      setTimeout(scramble, 720);
+      setTimeout(scramble, 1000);
+      setTimeout(clearIntro, 2600);
+    }
+
+    gate.addEventListener("click", enter);
+    gate.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); enter(); }
+    });
+  })();
 
   /* =================================================================
      3D SCENE — the void behind the feed.
